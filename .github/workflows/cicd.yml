@@ -15,6 +15,7 @@ permissions:
   contents: read
   packages: write
   security-events: write
+  deployments: write
 
 jobs:
   security-audit:
@@ -87,8 +88,8 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/mgtechgroup/uniscrape:latest
+            ghcr.io/mgtechgroup/uniscrape:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -109,10 +110,8 @@ jobs:
           echo '{"name":"UniScrape","version":"1.0.0"}' > dist/api-status.json
       
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: uniscrape
-          directory: dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: pages deploy webui/public --project-name=uniscrape --branch=master
