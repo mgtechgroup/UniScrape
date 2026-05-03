@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniScrape Search</title>
+    <style>
+        :root { --bg: #0a0a0f; --surface: #151520; --border: #2a2a3a; --text: #e0e0e0; --muted: #8888aa; --primary: #8B5CF6; --pink: #EC4899; --green: #10B981; --orange: #F97316; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height:100vh; }
+        .container { max-width:1200px; margin:0 auto; padding:20px; }
+        header { text-align:center; padding:40px 20px 20px; }
+        header h1 { font-size:2.5rem; background:linear-gradient(135deg,var(--primary),var(--pink),var(--orange)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        header p { color:var(--muted); margin-top:8px; }
+        .search-box { display:flex; gap:8px; margin:20px auto; max-width:700px; }
+        .search-box input { flex:1; padding:14px 20px; background:var(--surface); border:2px solid var(--border); border-radius:16px; color:var(--text); font-size:1rem; outline:none; transition:border-color .2s; }
+        .search-box input:focus { border-color:var(--primary); }
+        .search-box button { padding:14px 28px; background:var(--primary); color:white; border:none; border-radius:16px; font-size:1rem; font-weight:600; cursor:pointer; transition:background .2s; }
+        .search-box button:hover { background:#7C3AED; }
+        .filters { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:8px 0 20px; }
+        .filters label { display:flex; align-items:center; gap:4px; padding:6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; cursor:pointer; font-size:0.85rem; color:var(--muted); transition:all .2s; }
+        .filters label.checked { border-color:var(--primary); color:var(--primary); }
+        .filters input { display:none; }
+        .results { display:grid; gap:12px; }
+        .result { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; transition:border-color .2s; }
+        .result:hover { border-color:var(--primary); }
+        .result .title { font-weight:600; margin-bottom:4px; word-break:break-word; }
+        .result .title a { color:var(--text); text-decoration:none; }
+        .result .title a:hover { color:var(--primary); }
+        .result .meta { display:flex; gap:12px; flex-wrap:wrap; font-size:0.8rem; color:var(--muted); }
+        .result .badge { padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600; }
+        .badge-scraper { background:var(--primary); color:white; }
+        .badge-torrent { background:var(--green); color:black; }
+        .badge-webstream { background:var(--pink); color:white; }
+        .badge-localfile { background:var(--orange); color:black; }
+        .badge-dht { background:#555; color:white; }
+        .stats { text-align:center; color:var(--muted); font-size:0.9rem; padding:12px; }
+        .loading { text-align:center; padding:40px; color:var(--muted); }
+        .error { text-align:center; padding:20px; color:#EF4444; }
+        .tabs { display:flex; gap:4px; justify-content:center; margin:16px 0; }
+        .tab { padding:8px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--muted); cursor:pointer; font-size:0.85rem; }
+        .tab.active { border-color:var(--primary); color:var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>UniScrape Search</h1>
+            <p>Universal Adult Media Search — 800+ sources, torrents, streams, files</p>
+        </header>
+
+        <form class="search-box" id="searchForm" onsubmit="doSearch(event)">
+            <input type="text" id="searchInput" placeholder="Search everything — scenes, performers, torrents, streams, files..." autofocus>
+            <button type="submit">Search</button>
+        </form>
+
+        <div class="filters" id="filters">
+            <label><input type="checkbox" data-provider="torrents" checked onchange="toggleFilter(this)">📥 Torrents</label>
+            <label><input type="checkbox" data-provider="webstreams" checked onchange="toggleFilter(this)">🎬 Streams</label>
+            <label><input type="checkbox" data-provider="scrapers" checked onchange="toggleFilter(this)">🔍 Scrapers</label>
+            <label><input type="checkbox" data-provider="localfiles" checked onchange="toggleFilter(this)">📁 Files</label>
+            <label><input type="checkbox" data-provider="scrapesites" checked onchange="toggleFilter(this)">🌐 Sites</label>
+        </div>
+
+        <div class="tabs" id="tabs" style="display:none"></div>
+        <div class="stats" id="stats"></div>
+        <div class="results" id="results"></div>
+        <div class="loading" id="loading" style="display:none">Searching across multiple sources...</div>
+    </div>
+
+    <script>
+        const API = '/api/v1/manager/search/all';
+        const providers = ['torrents','webstreams','scrapers','localfiles','scrapesites'];
+
+        document.querySelectorAll('#filters label input').forEach(cb => {
+            cb.parentElement.classList.toggle('checked', cb.checked);
+        });
+
+        function toggleFilter(el) {
+            el.parentElement.classList.toggle('checked', el.checked);
+        }
+
+        async function doSearch(e) {
+            e.preventDefault();
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) return;
+
+            const active = providers.filter(p => document.querySelector(`[data-provider="${p}"]`).checked);
+            const params = new URLSearchParams({ q, providers: active.join(',') });
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('stats').innerHTML = '';
+            document.getElementById('tabs').style.display = 'none';
+
+            try {
+                const res = await fetch(`${API}?${params}`);
+                const data = await res.json();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('stats').innerHTML = `${data.total} results for "${data.query}"`;
+                renderResults(data);
+            } catch(err) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').innerHTML = '<div class="error">Search failed. Is the server running?</div>';
+            }
+        }
+
+        function renderResults(data) {
+            const container = document.getElementById('results');
+            if (!data.results?.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">No results found</div>';
+                return;
+            }
+
+            const tabs = document.getElementById('tabs');
+            tabs.style.display = 'flex';
+            tabs.innerHTML = '<div class="tab active" onclick="filterTab(\'all\',this)">All</div>';
+            const types = [...new Set(data.results.map(r => r.type))];
+            types.forEach(t => {
+                tabs.innerHTML += `<div class="tab" onclick="filterTab('${t}',this)">${t}s (${data.results.filter(r=>r.type===t).length})</div>`;
+            });
+
+            container.innerHTML = data.results.map(r => `
+                <div class="result" data-type="${r.type}">
+                    <div class="title">
+                        ${r.url ? `<a href="${r.url}" target="_blank">${escapeHtml(r.title)}</a>` : escapeHtml(r.title)}
+                    </div>
+                    <div class="meta">
+                        <span class="badge badge-${r.type}">${r.type}</span>
+                        <span>${r.source || ''}</span>
+                        ${r.seeds ? `<span>🌱 ${r.seeds}</span>` : ''}
+                        ${r.size ? `<span>📦 ${r.size}</span>` : ''}
+                        ${r.duration ? `<span>⏱ ${r.duration}</span>` : ''}
+                        ${r.views ? `<span>👁 ${r.views}</span>` : ''}
+                        ${r.path ? `<span>📂 ${r.path}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            window._allResults = data.results;
+        }
+
+        function filterTab(type, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('.result').forEach(r => {
+                r.style.display = (type === 'all' || r.dataset.type === type) ? 'block' : 'none';
+            });
+        }
+
+        function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        // Quick suggestions
+        const input = document.getElementById('searchInput');
+        const suggestions = ['latina', 'asian', 'anal', 'bdsm', 'vr', 'bbc', 'lesbian', 'threesome', 'cosplay', 'hentai', 'cuckold', 'creampie', 'bondage', 'gay', 'trans'];
+        input.addEventListener('focus', () => { if(!input.value) input.placeholder = `Try: ${suggestions.slice(0,5).join(', ')}...` });
+    </script>
+</body>
+</html>

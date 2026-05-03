@@ -1,0 +1,47 @@
+services:
+  uniscrape:
+    build: .
+    container_name: uniscrape
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+      - "8086:8086"
+    environment:
+      - PORT=8085
+      - NODE_ENV=production
+      - SCRAPERS_PATH=/scrapers
+    volumes:
+      # Mount CommunityScrapers for metadata scraping
+      - C:/stash/scrapers:/scrapers:ro
+      # Mount media directories for local file search
+      - D:/Media:/media:ro
+      - D:/Downloads:/downloads:ro
+      - ${HOME}/Videos:/home-videos:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: DHT node for P2P torrent search
+  dht-node:
+    image: linuxserver/transmission:latest
+    container_name: uniscrape-dht
+    restart: unless-stopped
+    ports:
+      - "6881:6881/udp"
+      - "6881:6881"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - ./dht-config:/config
+
+  # Optional: Chrome for CDP-based scrapers
+  chrome:
+    image: chromedp/headless-shell:latest
+    container_name: uniscrape-chrome
+    restart: unless-stopped
+    ports:
+      - "9222:9222"

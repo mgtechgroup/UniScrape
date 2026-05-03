@@ -1,0 +1,23 @@
+# CODEOWNERS - UniScrape
+# All code changes require approval from designated owners
+
+# Global owners - any change requires their approval
+* @mgtechgroup
+
+# Security-critical paths require multiple approvals
+server/plugins/*.js @mgtechgroup
+server/routes/*.js @mgtechgroup
+server/search/**/*.js @mgtechgroup
+docker/** @mgtechgroup
+
+# Community-contributed scrapers (lighter approval)
+server/scrapers/** @mgtechgroup
+
+# Documentation (self-approval ok)
+*.md
+docs/**
+README.md
+LICENSE
+
+# CI/CD workflows
+.github/workflows/** @mgtechgroup
