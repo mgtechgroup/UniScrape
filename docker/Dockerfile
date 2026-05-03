@@ -10,12 +10,8 @@ RUN apk add --no-cache python3 py3-pip && \
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev --ignore-scripts
 
-# Copy application
+# Copy application directories
 COPY server/ ./server/
-COPY stremio-addon/ ./stremio-addon/
-COPY plex-agent/ ./plex-agent/
-COPY jellyfin-plugin/ ./jellyfin-plugin/
-COPY stash-bridge/ ./stash-bridge/
 COPY webui/ ./webui/
 COPY cli/ ./cli/
 
