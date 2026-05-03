@@ -2,9 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install Python for scraper support
-RUN apk add --no-cache python3 py3-pip && \
-    pip3 install --break-system-packages stashapp-tools requests cloudscraper beautifulsoup4 lxml python-dateutil pillow
+# Install libvips + Python for scraper support
+RUN apk add --no-cache \
+    vips vips-dev vips-tools \
+    python3 py3-pip && \
+    pip3 install --break-system-packages \
+    pyvips \
+    stashapp-tools requests cloudscraper beautifulsoup4 lxml python-dateutil pillow
 
 # Install Node dependencies
 COPY package.json package-lock.json* ./

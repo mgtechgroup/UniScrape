@@ -97,6 +97,10 @@ async function executePythonScraper(scraper, query, fragment) {
     const result = execSync(`python "${scraper.path}" "${query || fragment || ''}"`, {
       timeout: 30000,
       encoding: 'utf8',
+      env: {
+        ...process.env,
+        VIPSCACHE_DIR: '/tmp/vips-cache',
+      }
     })
     return JSON.parse(result || '[]')
   } catch (e) {
