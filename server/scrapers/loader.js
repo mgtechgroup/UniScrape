@@ -14,7 +14,13 @@ export async function loadScrapers(scrapersPath) {
   loadedScrapers = []
   scraperIndex = {}
   
-  const files = readdirSync(scrapersPath, { recursive: true })
+  let files
+  try {
+    files = readdirSync(scrapersPath, { recursive: true })
+  } catch (err) {
+    console.error(`Failed to read scrapers directory: ${err.message}`)
+    return 0
+  }
   
   for (const file of files) {
     const ext = extname(file).toLowerCase()
@@ -44,7 +50,8 @@ export async function loadScrapers(scrapersPath) {
           scraperIndex[entry.id] = entry
         }
       } catch (e) {
-        // Skip malformed YAML
+        // Skip malformed YAML or unreadable files
+        console.warn(`Skipping ${file}: ${e.message}`)
       }
     }
   }

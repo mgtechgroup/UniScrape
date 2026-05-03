@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { load } from 'cheerio'
 import { getAllScrapers } from '../scrapers/loader.js'
 import { searchTorrents } from './providers/torrent-provider.js'
 import { searchDHT } from './providers/dht-provider.js'
