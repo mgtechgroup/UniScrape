@@ -4,12 +4,12 @@ name: CI/CD - UniScrape
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
     paths-ignore:
       - '**.md'
       - 'LICENSE'
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 permissions:
   contents: read
