@@ -19,6 +19,7 @@ import { saasRouter } from './routes/saas.js'
 import { scraperRouter } from './routes/scraper.js'
 import { metadataRouter } from './routes/metadata.js'
 import { managerRouter } from './routes/manager.js'
+import { toolsRouter } from './routes/tools.js'
 import { loadScrapers } from './scrapers/loader.js'
 import { searchEngine } from './search/engine.js'
 
@@ -82,6 +83,7 @@ app.use('/api/v1/scrape', scraperRouter)
 app.use('/api/v1/metadata', metadataRouter)
 app.use('/api/v1/manager', managerRouter)
 app.use('/api/v1/saas', saasRouter)
+app.use('/api/v1/tools', toolsRouter)
 
 // --- Serve Static Web UI ---
 app.use('/search', express.static(join(__dirname, '..', 'webui', 'public')))
