@@ -1,5 +1,8 @@
 import express from 'express'
 import { searchEngine } from '../search/engine.js'
+import { getPluginSources, getPluginsByType } from '../search/providers/stash-plugins-registry.js'
+import { torrentUpdater } from '../search/providers/torrent-updater.js'
+import { torrentStream } from '../search/providers/webtorrent.js'
 import { getAllScrapers, getGayScrapers } from '../scrapers/loader.js'
 
 export const managerRouter = express.Router()
@@ -45,6 +48,44 @@ managerRouter.get('/search/all', async (req, res) => {
       scrapesites: results.filter(r => r.type === 'scrapesite').length,
     }
   })
+})
+
+// --- Plugin Registry ---
+managerRouter.get('/plugins', (req, res) => {
+  const { type } = req.query
+  const plugins = type ? getPluginsByType(type) : getPluginSources()
+  res.json({
+    total: plugins.length,
+    by_type: {
+      official: getPluginsByType('official').length,
+      community: getPluginsByType('community').length,
+      theme: getPluginsByType('theme').length,
+      bridge: getPluginsByType('bridge').length,
+    },
+    plugins,
+  })
+})
+
+managerRouter.get('/plugins/:name', (req, res) => {
+  const plugins = getPluginSources()
+  const plugin = plugins.find(p => p.name.toLowerCase().replace(/\s+/g,'-') === req.params.name.toLowerCase())
+  if (!plugin) return res.status(404).json({ error: 'Plugin not found' })
+  res.json(plugin)
+})
+
+// --- Torrent Updater / DHT ---
+managerRouter.get('/torrent/feeds', (req, res) => {
+  res.json({ feeds: torrentUpdater.getFeeds() })
+})
+
+managerRouter.get('/torrent/stream', (req, res) => {
+  const { hash } = req.query
+  if (!hash) return res.status(400).json({ error: 'hash required' })
+  res.json(torrentStream.getStreamInfo(hash))
+})
+
+managerRouter.get('/torrent/trackers', (req, res) => {
+  res.json(torrentStream.getTrackers())
 })
 
 // --- File system search ---
